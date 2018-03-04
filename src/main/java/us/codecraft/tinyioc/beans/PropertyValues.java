@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 包装一个对象所有的PropertyValue。<br/>
+ * 包装一个对象所有的PropertyValue。
  * 为什么封装而不是直接用List?因为可以封装一些操作。
  * @author yihua.huang@dianping.com
  */
