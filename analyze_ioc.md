@@ -228,21 +228,15 @@ public abstract class AbstractApplicationContext implements ApplicationContext {
 }
 ```
 
-getBean方法，根据name查找，如果找到直接返回；否则，返回创建的实例．
+AbstractBeanFactory#getBean方法主要实现：
+* 1 根据name查找beanDefinition; 
+* 2 找到了，且bean已创建，返回；
+* 3 bean未创建，调用doCreateBean创建实例，**调用initializeBean向BeanPostProcessor发送回调**，返回创建的实例．
 
-###doCreateBean方法
-doCreateBean方法，首先创建实例，之后给实例中的property赋值．
-1) 如果bean实现了BeanFactoryAware接口，调用回调方法; 
-2) 如果是属性是基本类型，通过反射给属性赋值；
-3) 如果属性是BeanReference类型，需要首先实例化依赖的Bean，之后再通过反射给属性赋值；
 ```java
 public abstract class AbstractBeanFactory implements BeanFactory {
 
 	private Map<String, BeanDefinition> beanDefinitionMap = new ConcurrentHashMap<String, BeanDefinition>();
-
-	private final List<String> beanDefinitionNames = new ArrayList<String>();
-
-	private List<BeanPostProcessor> beanPostProcessors = new ArrayList<BeanPostProcessor>();
 
 	@Override
 	public Object getBean(String name) throws Exception {
@@ -258,19 +252,18 @@ public abstract class AbstractBeanFactory implements BeanFactory {
 		}
 		return bean;
 	}
+}
+```
 
-	protected Object initializeBean(Object bean, String name) throws Exception {
-		for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
-			bean = beanPostProcessor.postProcessBeforeInitialization(bean, name);
-		}
+###doCreateBean方法
+doCreateBean方法，首先创建实例，之后给实例中的property赋值．
+1) 如果bean实现了BeanFactoryAware接口，调用回调方法; 
+2) 如果是属性是基本类型，通过反射给属性赋值；
+3) 如果属性是BeanReference类型，需要首先实例化依赖的Bean，之后再通过反射给属性赋值；
 
-		// TODO:call initialize method
-		for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
-            bean = beanPostProcessor.postProcessAfterInitialization(bean, name);
-		}
-        return bean;
-	}
-
+```java
+public abstract class AbstractBeanFactory implements BeanFactory {
+    
 	protected Object createBeanInstance(BeanDefinition beanDefinition) throws Exception {
 		return beanDefinition.getBeanClass().newInstance();
 	}
@@ -319,3 +312,21 @@ public class AutowireCapableBeanFactory extends AbstractBeanFactory {
 
 ### initializeBean方法
 遍历beanPostProcessors队列，执行回调方法postProcessBeforeInitialization，　postProcessAfterInitialization．
+
+```java
+public abstract class AbstractBeanFactory implements BeanFactory {
+	private List<BeanPostProcessor> beanPostProcessors = new ArrayList<BeanPostProcessor>();
+
+	protected Object initializeBean(Object bean, String name) throws Exception {
+		for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
+			bean = beanPostProcessor.postProcessBeforeInitialization(bean, name);
+		}
+
+		// TODO:call initialize method
+		for (BeanPostProcessor beanPostProcessor : beanPostProcessors) {
+            bean = beanPostProcessor.postProcessAfterInitialization(bean, name);
+		}
+        return bean;
+	}
+}
+```
